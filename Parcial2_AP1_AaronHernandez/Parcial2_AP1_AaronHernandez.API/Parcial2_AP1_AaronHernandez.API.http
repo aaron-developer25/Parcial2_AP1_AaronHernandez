@@ -1,0 +1,6 @@
+@Parcial2_AP1_AaronHernandez.API_HostAddress = http://localhost:5137
+
+GET {{Parcial2_AP1_AaronHernandez.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
