@@ -215,6 +215,7 @@
 			}
 			if (!existe)
 			{
+				vehiculo.Gasto += valorAcesorio;
 				ListaDetalles.Add(new VehiculoDetalle(0, resultado.AccesorioId, valorAcesorio));
 				accesorioSeleccionado = "";
 				valorAcesorio = 0;
@@ -235,6 +236,7 @@
 
 	public async Task eliminarDetalle(VehiculoDetalle vehiculoDetalle)
 	{
+		vehiculo.Gasto -= vehiculoDetalle.Valor;
 		ListaDetallesEliminados.Add(new VehiculoDetalle(vehiculoDetalle.Id, vehiculoDetalle.VehiculoId, vehiculoDetalle.AccesorioId));
 		ListaDetalles.Remove(vehiculoDetalle);
 		ListaDetalles.Remove(vehiculoDetalle);
