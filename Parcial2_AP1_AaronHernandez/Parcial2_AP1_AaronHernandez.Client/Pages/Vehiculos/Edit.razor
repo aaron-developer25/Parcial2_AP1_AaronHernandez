@@ -39,6 +39,63 @@
 				</div>
 			</div>
 		</div>
+
+		<!-- INICIO DETALLES DEL VEHICULO -->
+		<div class="card-header bg-primary text-white text-center">
+			<h3 style="font-weight: bold;" class="mb-0 font-weight-bold">Detalles del Vehiculo</h3>
+		</div>
+
+		<div class="modal-body">
+			<div class="row">
+				<div class="row justify-content-end align-items-end">
+					<label class="fw-bold">Accesorio:</label>
+					<div class="col-4">
+						<InputText class="form-control" @bind-Value="accesorioSeleccionado"></InputText>
+					</div>
+					<div class="col-4">
+						<label class="fw-bold">Valor:</label>
+						<InputNumber class="form-control" @bind-Value="valorAcesorio"></InputNumber>
+					</div>
+					<div class="col-4">
+						<button type="button" class="btn btn-success" @onclick="agregarAccesorio"><i class="fas fa-plus"></i> Agregar</button>
+					</div>
+				</div>
+
+				<div class="mb-4"></div>
+				<table class="table table-bordered text-center">
+
+					<thead class="bg-secondary text-white">
+						<tr>
+							<th class="col-3">Descripción</th>
+							<th class="col-7">Valor</th>
+							<th class="col-1">Eliminar</th>
+						</tr>
+					</thead>
+
+					<tbody>
+						@if (ListaDetalles.Any())
+						{
+							@foreach (var item in ListaDetalles)
+							{
+								var itemAccesorio = (ListaAccesorios.FirstOrDefault(a => a.AccesorioId == item.AccesorioId))!;
+								<tr>
+									<td class="col-3">@itemAccesorio.Descripcion</td>
+									<td>@item.Valor</td>
+									<td class="col-1"><button style="background: transparent; border: none;" type="button" @onclick="(() => eliminarDetalle(item))"><i class="fas fa-trash"></i></button></td>
+								</tr>
+							}
+						}
+						else
+						{
+							<tr><td colspan="3">No hay accesorios...</td></tr>
+						}
+					</tbody>
+				</table>
+			</div>
+		</div>
+		<!-- FIN DETALLES DEL VEHICULO -->
+
+
 		<div class="card-footer">
 			<div class="text-end">
 				<a href="/indexVehiculos" class="btn btn-danger"><i class="fas fa-reply"></i>Retroceder</a>
@@ -73,12 +130,23 @@
 	[Parameter]
 	public int VehiculoID { get; set; }
 
+	public string accesorioSeleccionado = "";
+	public float valorAcesorio = 0;
+
 	public Vehiculos vehiculo = new Vehiculos();
+	public VehiculoDetalle detalles = new VehiculoDetalle();
+	public List<Accesorios> ListaAccesorios = new List<Accesorios>();
+	public List<VehiculoDetalle> ListaDetalles = new List<VehiculoDetalle>();
+	public List<VehiculoDetalle> ListaDetallesEliminados = new List<VehiculoDetalle>();
+
 
 	protected override async Task OnInitializedAsync()
 	{
 		if (VehiculoID != 0)
 		{
+			ListaAccesorios = await HttpClient.GetFromJsonAsync<List<Accesorios>>("api/Accesorios");
+			ListaDetalles = (await HttpClient.GetFromJsonAsync<List<VehiculoDetalle>>("api/VehiculoDetalle"))!.Where(d => d.VehiculoId == VehiculoID).ToList();
+
 			var buscado = await HttpClient.GetFromJsonAsync<Vehiculos>("api/Vehiculos/" + VehiculoID);
 			if (buscado != null)
 			{
@@ -91,19 +159,88 @@
 		}
 	}
 
+
 	public async Task Guardar()
 	{
-		var guardado = await HttpClient.PutAsJsonAsync("api/Vehiculos/" + VehiculoID, this.vehiculo);
-		if (guardado.IsSuccessStatusCode)
+		var guardadoVehiculo = await HttpClient.PutAsJsonAsync("api/Vehiculos/" + VehiculoID, this.vehiculo);
+
+		if (guardadoVehiculo.IsSuccessStatusCode)
 		{
-			await MostrarMensaje("Guardado exitoso!", "Valido");
-			NavigationManager.NavigateTo("indexVehiculos");
+			if (ListaDetallesEliminados.Any())
+			{
+				foreach (var detalle in ListaDetallesEliminados)
+				{
+					await HttpClient.DeleteAsync("api/VehiculoDetalle/" + detalle.Id);
+				}
+			}
+
+			foreach (var detalle in ListaDetalles)
+			{
+				if (detalle.Id == 0)
+				{
+					VehiculoDetalle ticketsDetalleNew = new VehiculoDetalle();
+					ticketsDetalleNew.VehiculoId = VehiculoID;
+					ticketsDetalleNew.AccesorioId = detalle.AccesorioId;
+
+					await HttpClient.PostAsJsonAsync("api/VehiculoDetalle", ticketsDetalleNew);
+				}
+			}
+
+			await MostrarMensaje("Guardado Existoso.", "Valido");
+			NavigationManager.NavigateTo("/indexVehiculos");
 		}
 		else
 		{
-			await MostrarMensaje("Error al registrar...", "Invalido");
+			await MostrarMensaje("No se puso contectar a la API!", "Invalido");
 		}
 	}
+
+
+	public async Task agregarAccesorio()
+	{
+		bool existe = false;
+		var busqueda = await HttpClient.GetFromJsonAsync<List<Accesorios>>("api/Accesorios");
+		var resultado = busqueda.FirstOrDefault(a => a.Descripcion == accesorioSeleccionado);
+
+		if (resultado != null)
+		{
+			foreach (var item in ListaDetalles)
+			{
+
+				if (item.AccesorioId == resultado.AccesorioId)
+				{
+					existe = true;
+				}
+			}
+			if (!existe)
+			{
+				ListaDetalles.Add(new VehiculoDetalle(0, resultado.AccesorioId, valorAcesorio));
+				accesorioSeleccionado = "";
+				valorAcesorio = 0;
+
+			}
+			else
+			{
+				await MostrarMensaje("Accesorio ya esta agregado!", "Invalido");
+			}
+		}
+		else
+		{
+			await MostrarMensaje("Accesorio no encontrado!", "Invalido");
+		}
+	}
+
+
+
+	public async Task eliminarDetalle(VehiculoDetalle vehiculoDetalle)
+	{
+		ListaDetallesEliminados.Add(new VehiculoDetalle(vehiculoDetalle.Id, vehiculoDetalle.VehiculoId, vehiculoDetalle.AccesorioId));
+		ListaDetalles.Remove(vehiculoDetalle);
+		ListaDetalles.Remove(vehiculoDetalle);
+		accesorioSeleccionado = "";
+		valorAcesorio = 0;
+	}
+
 
 
 	string mensajeTexto = "", mensajeColor = ""; bool ModalMensaje = false;

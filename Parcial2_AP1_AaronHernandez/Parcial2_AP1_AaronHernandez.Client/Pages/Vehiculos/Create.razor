@@ -141,15 +141,28 @@
 
 	public async Task Guardar()
 	{
-		var guardado = await HttpClient.PostAsJsonAsync("api/Vehiculos", this.vehiculo);
-		if (guardado.IsSuccessStatusCode)
+		var guardadoVehiculo = await HttpClient.PostAsJsonAsync("api/Vehiculos", this.vehiculo);
+
+		if (guardadoVehiculo.IsSuccessStatusCode)
 		{
-			await MostrarMensaje("Guardado exitoso!", "Valido");
-			NavigationManager.NavigateTo("indexVehiculos");
+			var vehiculoCreado = await guardadoVehiculo.Content.ReadFromJsonAsync<Vehiculos>();
+
+			//Agregamos los detalles del ticket
+			foreach (var detalle in ListaDetalles)
+			{
+				VehiculoDetalle vehiculoDetalleNew = new VehiculoDetalle();
+				vehiculoDetalleNew.VehiculoId = vehiculoCreado.VehiculoId;
+				vehiculoDetalleNew.AccesorioId = detalle.AccesorioId;
+
+				await HttpClient.PostAsJsonAsync("api/VehiculoDetalle", vehiculoDetalleNew);
+			}
+
+			await MostrarMensaje("Guardado Existoso.", "Valido");
+			NavigationManager.NavigateTo("/indexVehiculos");
 		}
 		else
 		{
-			await MostrarMensaje("Error al registrar...", "Invalido");
+			await MostrarMensaje("No se puso contectar a la API!", "Invalido");
 		}
 	}
 
@@ -177,6 +190,10 @@
 				valorAcesorio = 0;
 
 			}
+			else
+			{
+				await MostrarMensaje("Accesorio ya esta agregado!", "Invalido");
+			}
 		}
 		else
 		{
@@ -189,13 +206,8 @@
 	{
 		ListaDetalles.Remove(vehiculoDetalle);
 		accesorioSeleccionado = "";
+		valorAcesorio = 0;
 	}
-
-
-
-
-
-
 
 
 

@@ -23,5 +23,12 @@ namespace Compartido.Models
 			AccesorioId = accesorioid;
 			Valor = valor;
 		}
+
+		public VehiculoDetalle(int id, int accesorioid, float valor)
+		{
+			Id = id;
+			AccesorioId = accesorioid;
+			Valor = valor;
+		}
 	}
 }
