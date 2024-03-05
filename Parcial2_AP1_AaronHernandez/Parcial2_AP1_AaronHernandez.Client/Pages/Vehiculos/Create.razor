@@ -1,0 +1,224 @@
+﻿@page "/createVehiculo"
+
+@inject NavigationManager NavigationManager
+@inject HttpClient HttpClient
+
+<EditForm Model="vehiculo" OnValidSubmit="Guardar">
+	<DataAnnotationsValidator />
+	<div class="card">
+		<div class="card-header">
+			<div class="row text-center text-white bg-primary">
+				<h3>Registrar Cliente</h3>
+			</div>
+		</div>
+		<div class="card-body">
+			<div class="row">
+				<div class="col-6">
+					<label class="fw-bold">Descripci&oacute;n:</label>
+					<InputText class="form-control" @bind-Value="vehiculo.Descripcion"></InputText>
+					<ValidationMessage For="(() => vehiculo.Descripcion)" />
+				</div>
+				<div class="col-6">
+					<label class="fw-bold">Fecha:</label>
+					<InputDate class="form-control" @bind-Value="vehiculo.Fecha"></InputDate>
+					<ValidationMessage For="(() => vehiculo.Fecha)" />
+				</div>
+			</div>
+
+			<div class="row">
+				<div class="col-6">
+					<label class="fw-bold">Costo:</label>
+					<InputNumber class="form-control" @bind-Value="vehiculo.Costo"></InputNumber>
+					<ValidationMessage For="(() => vehiculo.Costo)" />
+				</div>
+				<div class="col-6">
+					<label class="fw-bold">Gasto:</label>
+					<InputNumber class="form-control" @bind-Value="vehiculo.Gasto" disabled></InputNumber>
+				</div>
+			</div>
+		</div>
+
+
+		<!-- INICIO DETALLES DEL VEHICULO -->
+		<div class="card-header bg-primary text-white text-center">
+			<h3 style="font-weight: bold;" class="mb-0 font-weight-bold">Detalles del Vehiculo</h3>
+		</div>
+
+		<div class="modal-body">
+			<div class="row">
+				<div class="row justify-content-end align-items-end">
+					<label class="fw-bold">Accesorio:</label>
+					<div class="col-4">
+						<InputText class="form-control" @bind-Value="accesorioSeleccionado"></InputText>
+					</div>
+					<div class="col-4">
+						<label class="fw-bold">Valor:</label>
+						<InputNumber class="form-control" @bind-Value="valorAcesorio"></InputNumber>
+					</div>
+					<div class="col-4">
+						<button type="button" class="btn btn-success" @onclick="agregarAccesorio"><i class="fas fa-plus"></i> Agregar</button>
+					</div>
+				</div>
+
+				<div class="mb-4"></div>
+				<table class="table table-bordered text-center">
+
+					<thead class="bg-secondary text-white">
+						<tr>
+							<th class="col-3">Descripción</th>
+							<th class="col-7">Valor</th>
+							<th class="col-1">Eliminar</th>
+						</tr>
+					</thead>
+
+					<tbody>
+						@if (ListaDetalles.Any())
+						{
+							@foreach (var item in ListaDetalles)
+							{
+								var itemAccesorio = (ListaAccesorios.FirstOrDefault(a => a.AccesorioId == item.AccesorioId))!;
+								<tr>
+									<td class="col-3">@itemAccesorio.Descripcion</td>
+									<td>@item.Valor</td>
+									<td class="col-1"><button style="background: transparent; border: none;" type="button" @onclick="(() => eliminarDetalle(item))"><i class="fas fa-trash"></i></button></td>
+								</tr>
+							}
+						}
+						else
+						{
+							<tr><td colspan="3">No hay accesorios...</td></tr>
+						}
+					</tbody>
+				</table>
+			</div>
+		</div>		
+		<!-- FIN DETALLES DEL VEHICULO -->
+
+		<div class="card-footer">
+			<div class="text-end">
+				<a href="/indexVehiculos" class="btn btn-danger"><i class="fas fa-reply"></i>Retroceder</a>
+				<button type="submit" class="btn btn-success"><i class="fas fa-save"></i> Guardar</button>
+			</div>
+		</div>
+	</div>
+
+</EditForm>
+
+
+
+@if (ModalMensaje)
+{
+    <div class="modal d-block" style="z-index: 999999; transition: transform 0.3s ease;">
+        <div class="w-auto position-fixed top-50 start-50 translate-middle">
+            <div class="modal-content" style="border-radius: 20px;">
+
+                <div class="modal-body bg-@mensajeColor text-center text-white" style="border-radius: 15px;">
+                    <label class="fw-bold">@mensajeTexto</label>
+                </div>
+
+            </div>
+        </div>
+    </div>
+}
+
+
+
+@code {
+
+	public string accesorioSeleccionado = "";
+	public float valorAcesorio = 0;
+
+	public Vehiculos vehiculo = new Vehiculos();
+	public VehiculoDetalle detalles = new VehiculoDetalle();
+	public List<Accesorios> ListaAccesorios = new List<Accesorios>();
+	public List<VehiculoDetalle> ListaDetalles = new List<VehiculoDetalle>();
+
+	protected override async Task OnInitializedAsync()
+	{
+		vehiculo.Fecha = DateTime.Now;
+		ListaAccesorios = await HttpClient.GetFromJsonAsync<List<Accesorios>>("api/Accesorios");
+	}
+
+	public async Task Guardar()
+	{
+		var guardado = await HttpClient.PostAsJsonAsync("api/Vehiculos", this.vehiculo);
+		if (guardado.IsSuccessStatusCode)
+		{
+			await MostrarMensaje("Guardado exitoso!", "Valido");
+			NavigationManager.NavigateTo("indexVehiculos");
+		}
+		else
+		{
+			await MostrarMensaje("Error al registrar...", "Invalido");
+		}
+	}
+
+
+	public async Task agregarAccesorio()
+	{
+		bool existe = false;
+		var busqueda = await HttpClient.GetFromJsonAsync<List<Accesorios>>("api/Accesorios");
+		var resultado = busqueda.FirstOrDefault(a => a.Descripcion == accesorioSeleccionado);
+
+		if (resultado != null)
+		{
+			foreach (var item in ListaDetalles)
+			{
+
+				if (item.AccesorioId == resultado.AccesorioId)
+				{
+					existe = true;
+				}
+			}
+			if (!existe)
+			{
+				ListaDetalles.Add(new VehiculoDetalle(resultado.AccesorioId, valorAcesorio));
+				accesorioSeleccionado = "";
+				valorAcesorio = 0;
+
+			}
+		}
+		else
+		{
+			await MostrarMensaje("Accesorio no encontrado!", "Invalido");
+		}
+	}
+
+
+	public async Task eliminarDetalle(VehiculoDetalle vehiculoDetalle)
+	{
+		ListaDetalles.Remove(vehiculoDetalle);
+		accesorioSeleccionado = "";
+	}
+
+
+
+
+
+
+
+
+
+	string mensajeTexto = "", mensajeColor = ""; bool ModalMensaje = false;
+
+	public async Task MostrarMensaje(string mensaje, string tipo)
+	{
+		mensajeTexto = mensaje;
+
+		if (tipo == "Valido")
+		{
+			mensajeColor = "success";
+		}
+		else
+		{
+			mensajeColor = "danger";
+		}
+
+		ModalMensaje = true;
+		StateHasChanged();
+		await Task.Delay(3000);
+		ModalMensaje = false;
+		StateHasChanged();
+	}
+
+}

@@ -1,0 +1,131 @@
+﻿@page "/deleteVehiculo"
+@page "/deleteVehiculo/{VehiculoID:int}"
+
+
+@inject NavigationManager NavigationManager
+@inject HttpClient HttpClient
+
+<EditForm Model="vehiculo" OnValidSubmit="Eliminar">
+	<DataAnnotationsValidator />
+	<div class="card">
+		<div class="card-header">
+			<div class="row text-center text-white bg-primary">
+				<h3>Registrar Cliente</h3>
+			</div>
+		</div>
+		<div class="card-body">
+			<div class="row">
+				<div class="col-6">
+					<label class="fw-bold">Descripci&oacute;n:</label>
+					<span>@vehiculo.Descripcion</span>
+				</div>
+				<div class="col-6">
+					<label class="fw-bold">Fecha:</label>
+					<span>@vehiculo.Fecha.ToString("dd/MM/yyyy")</span>
+				</div>
+			</div>
+
+			<div class="row mb-4">
+				<div class="col-6">
+					<label class="fw-bold">Costo:</label>
+					<span>@vehiculo.Costo</span>
+				</div>
+				<div class="col-6">
+					<label class="fw-bold">Gasto:</label>
+					<span>@vehiculo.Costo</span>
+				</div>
+			</div>
+
+			<div class="row text-center">
+				<label class="fw-bold">¿Seguro que quieres eliminar?</label>
+			</div>
+		</div>
+		<div class="card-footer">
+			<div class="text-center">
+				<button type="button" class="btn btn-success" @onclick="Eliminar"><i class="fas fa-check"></i> Si</button>
+				<a href="/indexVehiculos" class="btn btn-danger"><i class="fas fa-times"></i> No</a>
+			</div>
+		</div>
+	</div>
+
+</EditForm>
+
+
+
+@if (ModalMensaje)
+{
+	<div class="modal d-block" style="z-index: 999999; transition: transform 0.3s ease;">
+		<div class="w-auto position-fixed top-50 start-50 translate-middle">
+			<div class="modal-content" style="border-radius: 20px;">
+
+				<div class="modal-body bg-@mensajeColor text-center text-white" style="border-radius: 15px;">
+					<label class="fw-bold">@mensajeTexto</label>
+				</div>
+
+			</div>
+		</div>
+	</div>
+}
+
+
+
+@code {
+
+	[Parameter]
+	public int VehiculoID { get; set; }
+
+	public Vehiculos vehiculo = new Vehiculos();
+
+	protected override async Task OnInitializedAsync()
+	{
+		if (VehiculoID != 0)
+		{
+			var buscado = await HttpClient.GetFromJsonAsync<Vehiculos>("api/Vehiculos/" + VehiculoID);
+			if (buscado != null)
+			{
+				vehiculo = buscado;
+			}
+			else
+			{
+				await MostrarMensaje("Vehiculo no encontrado...", "Invalido");
+			}
+		}
+	}
+
+	public async Task Eliminar()
+	{
+		var guardado = await HttpClient.DeleteAsync("api/Vehiculos/" + VehiculoID);
+		if (guardado.IsSuccessStatusCode)
+		{
+			await MostrarMensaje("Eliminado exitoso!", "Valido");
+			NavigationManager.NavigateTo("indexVehiculos");
+		}
+		else
+		{
+			await MostrarMensaje("Error al eliminar...", "Invalido");
+		}
+	}
+
+	string mensajeTexto = "", mensajeColor = ""; bool ModalMensaje = false;
+
+	public async Task MostrarMensaje(string mensaje, string tipo)
+	{
+		mensajeTexto = mensaje;
+
+		if (tipo == "Valido")
+		{
+			mensajeColor = "success";
+		}
+		else
+		{
+			mensajeColor = "danger";
+		}
+
+		ModalMensaje = true;
+		StateHasChanged();
+		await Task.Delay(3000);
+		ModalMensaje = false;
+		StateHasChanged();
+	}
+
+}

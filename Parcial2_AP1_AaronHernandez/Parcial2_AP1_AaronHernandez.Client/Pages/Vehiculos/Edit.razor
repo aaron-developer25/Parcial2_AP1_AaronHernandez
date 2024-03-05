@@ -1,0 +1,131 @@
+﻿@page "/editVehiculo"
+@page "/editVehiculo/{VehiculoID:int}"
+
+
+@inject NavigationManager NavigationManager
+@inject HttpClient HttpClient
+
+<EditForm Model="vehiculo" OnValidSubmit="Guardar">
+	<DataAnnotationsValidator />
+	<div class="card">
+		<div class="card-header">
+			<div class="row text-center text-white bg-primary">
+				<h3>Registrar Cliente</h3>
+			</div>
+		</div>
+		<div class="card-body">
+			<div class="row">
+				<div class="col-6">
+					<label class="fw-bold">Descripci&oacute;n:</label>
+					<InputText class="form-control" @bind-Value="vehiculo.Descripcion"></InputText>
+					<ValidationMessage For="(() => vehiculo.Descripcion)" />
+				</div>
+				<div class="col-6">
+					<label class="fw-bold">Fecha:</label>
+					<InputDate class="form-control" @bind-Value="vehiculo.Fecha"></InputDate>
+					<ValidationMessage For="(() => vehiculo.Fecha)" />
+				</div>
+			</div>
+
+			<div class="row">
+				<div class="col-6">
+					<label class="fw-bold">Costo:</label>
+					<InputNumber class="form-control" @bind-Value="vehiculo.Costo"></InputNumber>
+					<ValidationMessage For="(() => vehiculo.Costo)" />
+				</div>
+				<div class="col-6">
+					<label class="fw-bold">Gasto:</label>
+					<InputNumber class="form-control" @bind-Value="vehiculo.Gasto" disabled></InputNumber>
+				</div>
+			</div>
+		</div>
+		<div class="card-footer">
+			<div class="text-end">
+				<a href="/indexVehiculos" class="btn btn-danger"><i class="fas fa-reply"></i>Retroceder</a>
+				<button type="submit" class="btn btn-success"><i class="fas fa-save"></i> Guardar</button>
+			</div>
+		</div>
+	</div>
+
+</EditForm>
+
+
+
+@if (ModalMensaje)
+{
+    <div class="modal d-block" style="z-index: 999999; transition: transform 0.3s ease;">
+        <div class="w-auto position-fixed top-50 start-50 translate-middle">
+            <div class="modal-content" style="border-radius: 20px;">
+
+                <div class="modal-body bg-@mensajeColor text-center text-white" style="border-radius: 15px;">
+                    <label class="fw-bold">@mensajeTexto</label>
+                </div>
+
+            </div>
+        </div>
+    </div>
+}
+
+
+
+@code {
+
+	[Parameter]
+	public int VehiculoID { get; set; }
+
+	public Vehiculos vehiculo = new Vehiculos();
+
+	protected override async Task OnInitializedAsync()
+	{
+		if (VehiculoID != 0)
+		{
+			var buscado = await HttpClient.GetFromJsonAsync<Vehiculos>("api/Vehiculos/" + VehiculoID);
+			if (buscado != null)
+			{
+				vehiculo = buscado;
+			}
+			else
+			{
+				await MostrarMensaje("Vehiculo no encontrado...", "Invalido");
+			}
+		}
+	}
+
+	public async Task Guardar()
+	{
+		var guardado = await HttpClient.PutAsJsonAsync("api/Vehiculos/" + VehiculoID, this.vehiculo);
+		if (guardado.IsSuccessStatusCode)
+		{
+			await MostrarMensaje("Guardado exitoso!", "Valido");
+			NavigationManager.NavigateTo("indexVehiculos");
+		}
+		else
+		{
+			await MostrarMensaje("Error al registrar...", "Invalido");
+		}
+	}
+
+
+	string mensajeTexto = "", mensajeColor = ""; bool ModalMensaje = false;
+
+	public async Task MostrarMensaje(string mensaje, string tipo)
+	{
+		mensajeTexto = mensaje;
+
+		if (tipo == "Valido")
+		{
+			mensajeColor = "success";
+		}
+		else
+		{
+			mensajeColor = "danger";
+		}
+
+		ModalMensaje = true;
+		StateHasChanged();
+		await Task.Delay(3000);
+		ModalMensaje = false;
+		StateHasChanged();
+	}
+
+}

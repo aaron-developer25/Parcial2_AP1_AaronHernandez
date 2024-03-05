@@ -1,0 +1,124 @@
+﻿@page "/indexVehiculos"
+
+@inject HttpClient HttpClient
+
+<div class="card">
+
+	<div class="card-header">
+		<div class="row text-center text-white bg-primary">
+			<h3>Centro de Vehiculos</h3>
+		</div>
+	</div>
+
+	<div class="card-body">
+		<div class="row align-items-end justify-content-end mb-4">
+			<div class="col-3">
+				<label class="fw-bold">Filtrar:</label>
+				<select class="form-select" @bind="filtrar">
+					<option value="1">Vehiculo Id</option>
+					<option value="2">Descripcion</option>
+				</select>
+			</div>
+
+			<div class="col-8">
+				<label class="fw-bold">Busqueda:</label>
+				<div class="input-group">
+					<InputText class="form-control" @bind-Value="busqueda"></InputText>
+					<button class="btn btn-outline-primary" @onclick="Buscar"><i class="fas fa-search"></i> Buscar</button>
+				</div>
+			</div>	
+
+			<div class="col">
+				<a href="/createVehiculo" class="btn btn-success"><i class="fas fa-plus"></i> Crear</a>
+			</div>
+		</div>
+
+		<div>
+			<table class="table table-bordered text-center">
+
+				<thead>
+					<tr>
+						<th>VehiculoId</th>
+						<th>Descripci&oacute;n</th>
+						<th>Fecha</th>
+						<th>Costo</th>
+						<th>Gasto</th>
+						<th>Editar</th>
+						<th>Detalle</th>
+						<th>Eliminar</th>
+					</tr>
+				</thead>
+
+				<tbody>
+					@if (ListaVehiculos.Any())
+					{
+						@foreach (var item in ListaVehiculos)
+						{
+							<tr>
+								<td>@item.VehiculoId</td>
+								<td>@item.Descripcion</td>
+								<td>@item.Fecha.ToString("dd/MM/yyyy")</td>
+								<td>@item.Costo</td>
+								<td>@item.Gasto</td>
+								<td>
+									<a href="editVehiculo/@item.VehiculoId"><i class="fas fa-edit"></i></a>
+								</td>
+								<td>
+									<a href="detailsVehiculo/@item.VehiculoId"><i class="fas fa-book"></i></a>
+								</td>
+								<td>
+									<a href="deleteVehiculo/@item.VehiculoId"><i class="fas fa-trash"></i></a>
+								</td>
+							</tr>
+						}
+					}
+					else
+					{
+						<tr>				
+							<td colspan="9" class="text-center"> <label>No se ha encontrado nada</label> </td>
+						</tr>
+					}
+				</tbody>
+
+			</table>
+
+		</div>
+
+
+	</div>
+
+
+</div>
+
+
+
+
+@code {
+
+	public string filtrar = "1", busqueda = "";
+
+	private List<Vehiculos> ListaVehiculos = new List<Vehiculos>();
+
+	protected override async Task OnInitializedAsync()
+	{
+		ListaVehiculos = await HttpClient.GetFromJsonAsync<List<Vehiculos>>("api/Vehiculos");
+	}
+
+	public async Task Buscar()
+	{
+		if (filtrar == "1" && int.TryParse(busqueda, out int resul))
+		{
+			ListaVehiculos = (await HttpClient.GetFromJsonAsync<List<Vehiculos>>("api/Vehiculos")).Where(v => v.VehiculoId == resul).ToList();
+		}
+		else if(filtrar == "2")
+		{
+			ListaVehiculos = (await HttpClient.GetFromJsonAsync<List<Vehiculos>>("api/Vehiculos")).Where(v => v.Descripcion == busqueda).ToList();
+		}
+		if (string.IsNullOrEmpty(busqueda))
+		{
+			ListaVehiculos = await HttpClient.GetFromJsonAsync<List<Vehiculos>>("api/Vehiculos");
+		}
+	}
+
+	
+}
