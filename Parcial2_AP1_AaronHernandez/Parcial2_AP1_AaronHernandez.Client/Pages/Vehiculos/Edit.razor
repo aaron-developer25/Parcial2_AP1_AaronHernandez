@@ -178,11 +178,12 @@
 			{
 				if (detalle.Id == 0)
 				{
-					VehiculoDetalle ticketsDetalleNew = new VehiculoDetalle();
-					ticketsDetalleNew.VehiculoId = VehiculoID;
-					ticketsDetalleNew.AccesorioId = detalle.AccesorioId;
+					VehiculoDetalle vehiculoDetalleNew = new VehiculoDetalle();
+					vehiculoDetalleNew.VehiculoId = VehiculoID;
+					vehiculoDetalleNew.AccesorioId = detalle.AccesorioId;
+					vehiculoDetalleNew.Valor = detalle.Valor;
 
-					await HttpClient.PostAsJsonAsync("api/VehiculoDetalle", ticketsDetalleNew);
+					await HttpClient.PostAsJsonAsync("api/VehiculoDetalle", vehiculoDetalleNew);
 				}
 			}
 

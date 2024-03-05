@@ -153,6 +153,7 @@
 				VehiculoDetalle vehiculoDetalleNew = new VehiculoDetalle();
 				vehiculoDetalleNew.VehiculoId = vehiculoCreado.VehiculoId;
 				vehiculoDetalleNew.AccesorioId = detalle.AccesorioId;
+				vehiculoDetalleNew.Valor = detalle.Valor;
 
 				await HttpClient.PostAsJsonAsync("api/VehiculoDetalle", vehiculoDetalleNew);
 			}
